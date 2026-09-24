@@ -26,9 +26,25 @@ gameForm.addEventListener("submit", async (event) => {
             return;
         }
 
-        console.log(result);
+        const boardId = result.data._id;
 
-        window.location.href = `/game/${result.data._id}`;
+        const rectangleResponse = await fetch(
+            `/shikaku/rectangles/${boardId}`,
+            {
+                method: "POST"
+            }
+        );
+
+        const rectangleResult = await rectangleResponse.json();
+
+        if (!rectangleResponse.ok) {
+            errorElement.textContent = rectangleResult.message;
+            return;
+        }
+
+        console.log("Rectangles generated:", rectangleResult);
+
+        window.location.href = `view/game/${boardId}`;
 
     } catch (error) {
         console.log(error);

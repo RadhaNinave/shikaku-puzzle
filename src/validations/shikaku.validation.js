@@ -1,5 +1,5 @@
 import Joi from "joi";
-
+import mongoose from "mongoose";
 export const createShikakuSchema = Joi.object({
     rows: Joi.number()
         .integer()

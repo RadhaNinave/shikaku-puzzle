@@ -18,27 +18,182 @@ export const generateRectanglesService = async (boardId) => {
         throw error;
     }
 
+    const board = [];
+
+    for (let row = 0; row < game.rows; row++) {
+        board[row] = [];
+
+        for (let column = 0; column < game.columns; column++) {
+            board[row][column] = false;
+        }
+    }
+
     const rectangles = [];
 
-    for (let i = 0; i < 5; i++) {
-        const width = Math.floor(Math.random() * 3) + 1;
-        const height = Math.floor(Math.random() * 3) + 1;
 
-        const maxRow = game.rows - height;
-        const maxColumn = game.columns - width;
+    const canPlaceRectangle = (row, column, width, height) => {
 
-        const row = Math.floor(Math.random() * (maxRow + 1));
-        const column = Math.floor(Math.random() * (maxColumn + 1));
+        if (row + height > game.rows) {
+            return false;
+        }
 
-        rectangles.push({
-            id: i + 1,
-            row,
-            column,
-            width,
-            height,
-            locked: false
-        });
+        if (column + width > game.columns) {
+            return false;
+        }
+
+        for (let r = row; r < row + height; r++) {
+
+            for (let c = column; c < column + width; c++) {
+
+                if (board[r][c]) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    };
+
+
+    const placeRectangle = (row, column, width, height) => {
+
+        for (let r = row; r < row + height; r++) {
+
+            for (let c = column; c < column + width; c++) {
+                board[r][c] = true;
+            }
+        }
+    };
+
+
+    const removeRectangle = (row, column, width, height) => {
+
+        for (let r = row; r < row + height; r++) {
+
+            for (let c = column; c < column + width; c++) {
+                board[r][c] = false;
+            }
+        }
+    };
+
+
+    const generate = () => {
+
+        let emptyRow = -1;
+        let emptyColumn = -1;
+
+
+        // Find first empty cell
+        for (let row = 0; row < game.rows; row++) {
+
+            for (let column = 0; column < game.columns; column++) {
+
+                if (!board[row][column]) {
+                    emptyRow = row;
+                    emptyColumn = column;
+                    break;
+                }
+            }
+
+            if (emptyRow !== -1) {
+                break;
+            }
+        }
+
+
+        // Board is completely filled
+        if (emptyRow === -1) {
+            return true;
+        }
+
+
+        const possibleRectangles = [];
+
+
+        // Generate possible rectangles
+       for (let height = 1; height <= 3; height++) {
+
+    for (let width = 1; width <= 3; width++) {
+
+        const area = width * height;
+
+        if (area < 2 || area > 6) {
+            continue;
+        }
+
+        if (
+            canPlaceRectangle(
+                emptyRow,
+                emptyColumn,
+                width,
+                height
+            )
+        ) {
+            possibleRectangles.push({
+                width,
+                height
+            });
+        }
     }
+}
+
+        // Randomize rectangles
+        possibleRectangles.sort(() => Math.random() - 0.5);
+
+
+        for (const rectangle of possibleRectangles) {
+
+            const { width, height } = rectangle;
+
+
+            placeRectangle(
+                emptyRow,
+                emptyColumn,
+                width,
+                height
+            );
+
+
+            rectangles.push({
+                id: rectangles.length + 1,
+                row: emptyRow,
+                column: emptyColumn,
+                width,
+                height,
+                locked: false
+            });
+
+
+            if (generate()) {
+                return true;
+            }
+
+
+            // Backtrack
+            rectangles.pop();
+
+            removeRectangle(
+                emptyRow,
+                emptyColumn,
+                width,
+                height
+            );
+        }
+
+
+        return false;
+    };
+
+
+    const generated = generate();
+
+
+    if (!generated) {
+        const error = new Error("Unable to generate puzzle");
+        error.statusCode = 500;
+        throw error;
+    }
+
 
     game.rectangles = rectangles;
 
@@ -46,7 +201,6 @@ export const generateRectanglesService = async (boardId) => {
 
     return rectangles;
 };
-
 export const selectRectangleService = async (
     boardId,
     {

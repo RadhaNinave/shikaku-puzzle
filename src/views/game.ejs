@@ -3,22 +3,93 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Shikaku Game</title>
+
+    <link rel="stylesheet" href="/css/game.css">
 </head>
 
 <body>
 
-    <h1>Shikaku Game</h1>
+    <main class="game-container">
 
-    <p>Board ID: <%= game._id %></p>
+        <header class="game-header">
 
-    <p>Rows: <%= game.rows %></p>
+            <div>
+                <h1>Shikaku</h1>
 
-    <p>Columns: <%= game.columns %></p>
+                <p>
+                    <%= game.rows %> × <%= game.columns %> Puzzle
+                </p>
+            </div>
 
-    <p>Status: <%= game.status %></p>
+            <div class="game-info">
+
+                <span>
+                    Time:
+                    <strong id="timer">00:00</strong>
+                </span>
+
+                <button id="resetButton">
+                    Reset
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <section class="game-board-section">
+
+            <div
+                id="gameBoard"
+                class="game-board"
+                style="
+                    grid-template-columns: repeat(<%= game.columns %>, 60px);
+                    grid-template-rows: repeat(<%= game.rows %>, 60px);
+                "
+            >
+
+                <% for (let row = 0; row < game.rows; row++) { %>
+
+                    <% for (let column = 0; column < game.columns; column++) { %>
+
+                        <div
+                            class="cell"
+                            data-row="<%= row %>"
+                            data-column="<%= column %>"
+                        ></div>
+
+                    <% } %>
+
+                <% } %>
+
+            </div>
+
+            <p id="gameMessage"></p>
+
+        </section>
+
+    </main>
+
+
+    <script>
+        const boardId = "<%= game._id %>";
+
+        const rows = <%= game.rows %>;
+
+        const columns = <%= game.columns %>;
+
+        const rectangles = <%- JSON.stringify(game.rectangles) %>;
+    </script>
+
+
+    <script src="/js/game.js"></script>
 
 </body>
 

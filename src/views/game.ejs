@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
 
     <meta
@@ -12,7 +13,9 @@
     <title>Shikaku Game</title>
 
     <link rel="stylesheet" href="/css/game.css">
+
 </head>
+
 
 <body>
 
@@ -21,12 +24,15 @@
         <header class="game-header">
 
             <div>
+
                 <h1>Shikaku</h1>
 
                 <p>
                     <%= game.rows %> × <%= game.columns %> Puzzle
                 </p>
+
             </div>
+
 
             <div class="game-info">
 
@@ -34,6 +40,7 @@
                     Time:
                     <strong id="timer">00:00</strong>
                 </span>
+
 
                 <button id="resetButton">
                     Reset
@@ -71,6 +78,7 @@
 
             </div>
 
+
             <p id="gameMessage"></p>
 
         </section>
@@ -79,13 +87,16 @@
 
 
     <script>
+
         const boardId = "<%= game._id %>";
 
         const rows = <%= game.rows %>;
 
         const columns = <%= game.columns %>;
 
-        const rectangles = <%- JSON.stringify(game.rectangles) %>;
+        const rectangles =
+            <%- JSON.stringify(game.rectangles) %>;
+
     </script>
 
 

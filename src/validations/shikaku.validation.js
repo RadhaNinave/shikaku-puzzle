@@ -1,6 +1,6 @@
 import Joi from "joi";
 
-export const createGameSchema = Joi.object({
+export const createShikakuSchema = Joi.object({
     rows: Joi.number()
         .integer()
         .min(1)
@@ -55,3 +55,6 @@ export const lockRectangleSchema = Joi.object({
         .min(0)
         .required()
 });
+export const isValidObjectId = (id) => {
+    return mongoose.Types.ObjectId.isValid(id);
+};

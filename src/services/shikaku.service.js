@@ -1,4 +1,4 @@
-import Shikaku from "../models/shikaku.model.js";
+import Shikaku from "../models/shukaku.model.js";
 
 export const createGameService = async ({ rows, columns }) => {
     const game = await Shikaku.create({

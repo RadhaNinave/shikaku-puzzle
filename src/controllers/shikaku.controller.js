@@ -8,6 +8,8 @@ import {
      getGameTimeService
 } from "../services/shikaku.service.js";
 
+import { isValidObjectId } from "../validations/shikaku.validation.js";
+
 export const createGame = async (req, res) => {
     try {
         const game = await createGameService(req.body);
@@ -31,6 +33,13 @@ export const generateRectangles = async (req, res) => {
     try {
         const { boardId } = req.params;
 
+        if (!isValidObjectId(boardId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid board ID"
+            });
+        }
+
         const rectangles = await generateRectanglesService(boardId);
 
         return res.status(200).json({
@@ -51,6 +60,13 @@ export const generateRectangles = async (req, res) => {
 export const selectRectangle = async (req, res) => {
     try {
         const { boardId } = req.params;
+
+        if (!isValidObjectId(boardId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid board ID"
+            });
+        }
 
         const rectangle = await selectRectangleService(
             boardId,
@@ -76,6 +92,13 @@ export const lockRectangle = async (req, res) => {
     try {
         const { boardId } = req.params;
 
+        if (!isValidObjectId(boardId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid board ID"
+            });
+        }
+
         const rectangle = await lockRectangleService(
             boardId,
             req.body
@@ -100,6 +123,13 @@ export const checkWin = async (req, res) => {
     try {
         const { boardId } = req.params;
 
+        if (!isValidObjectId(boardId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid board ID"
+            });
+        }
+
         const result = await checkWinService(boardId);
 
         return res.status(200).json({
@@ -122,6 +152,13 @@ export const resetGame = async (req, res) => {
     try {
         const { boardId } = req.params;
 
+        if (!isValidObjectId(boardId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid board ID"
+            });
+        }
+
         const game = await resetGameService(boardId);
 
         return res.status(200).json({
@@ -141,6 +178,13 @@ export const resetGame = async (req, res) => {
 export const getGameTime = async (req, res) => {
     try {
         const { boardId } = req.params;
+
+        if (!isValidObjectId(boardId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid board ID"
+            });
+        }
 
         const result = await getGameTimeService(boardId);
 

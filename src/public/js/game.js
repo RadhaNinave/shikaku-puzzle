@@ -42,6 +42,8 @@ rectangles.forEach((rectangle) => {
   cell.textContent = area;
 });
 
+restoreLockedRectangles();
+
 cells.forEach((cell) => {
   cell.addEventListener("mousedown", (event) => {
     event.preventDefault();
@@ -285,8 +287,28 @@ async function checkWin() {
       return;
     }
 
+    // if (result.data.won) {
+    //   gameCompleted = true;
+
+    //   // Stop timer
+    //   stopTimer();
+
+    //   // Use final time from backend
+    //   elapsedSeconds = result.data.totalTime;
+
+    //   updateTimerDisplay();
+
+    //   const message = document.getElementById("gameMessage");
+
+    //   if (message) {
+    //     message.textContent = `Congratulations! You completed the puzzle in ${formatTime(result.data.totalTime)}.`;
+
+    //     message.classList.add("success-message");
+    //   }
+    // }
+
     if (result.data.won) {
-      gameCompleted = true;
+   gameCompleted = true;
 
       // Stop timer
       stopTimer();
@@ -295,20 +317,31 @@ async function checkWin() {
       elapsedSeconds = result.data.totalTime;
 
       updateTimerDisplay();
+    showWinningMessage(result.data.totalTime);
 
-      const message = document.getElementById("gameMessage");
-
-      if (message) {
-        message.textContent = `Congratulations! You completed the puzzle in ${formatTime(result.data.totalTime)}.`;
-
-        message.classList.add("success-message");
-      }
-    }
+}
   } catch (error) {
     console.log("Check win error:", error);
   }
 }
 
+function showWinningMessage(totalTime) {
+
+    const message = document.getElementById("gameMessage");
+    const newGameButton = document.getElementById("newGameButton");
+
+    if (message) {
+
+        message.textContent =
+            `Congratulations! You completed the puzzle in ${formatTime(totalTime)}.`;
+
+        message.classList.add("success-message");
+    }
+
+    if (newGameButton) {
+        newGameButton.style.display = "inline-block";
+    }
+}
 function clearSelection() {
   cells.forEach((cell) => {
     cell.classList.remove("selected");
@@ -318,6 +351,54 @@ function clearSelection() {
     cell.classList.remove("selected-left");
     cell.classList.remove("selected-right");
   });
+}
+
+function restoreLockedRectangles() {
+
+    rectangles.forEach((rectangle) => {
+
+        if (!rectangle.locked) {
+            return;
+        }
+
+        const startRow = rectangle.row;
+        const startColumn = rectangle.column;
+
+        const endRow = rectangle.row + rectangle.height - 1;
+        const endColumn = rectangle.column + rectangle.width - 1;
+
+        cells.forEach((cell) => {
+
+            const row = Number(cell.dataset.row);
+            const column = Number(cell.dataset.column);
+
+            if (
+                row >= startRow &&
+                row <= endRow &&
+                column >= startColumn &&
+                column <= endColumn
+            ) {
+
+                cell.classList.add("locked");
+
+                if (row === startRow) {
+                    cell.classList.add("locked-top");
+                }
+
+                if (row === endRow) {
+                    cell.classList.add("locked-bottom");
+                }
+
+                if (column === startColumn) {
+                    cell.classList.add("locked-left");
+                }
+
+                if (column === endColumn) {
+                    cell.classList.add("locked-right");
+                }
+            }
+        });
+    });
 }
 
 resetButton.addEventListener("click", async () => {
@@ -419,3 +500,5 @@ async function initializeTimer() {
 }
 
 initializeTimer();
+
+

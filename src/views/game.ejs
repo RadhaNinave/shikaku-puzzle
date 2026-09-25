@@ -80,6 +80,13 @@
 
 
             <p id="gameMessage"></p>
+            <a
+                href="/"
+                id="newGameButton"
+                class="new-game-button"
+            >
+                Start New Game
+            </a>
 
         </section>
 
@@ -96,6 +103,9 @@
 
         const rectangles =
             <%- JSON.stringify(game.rectangles) %>;
+
+               const gameStatus = "<%= game.status %>";
+    const gameTotalTime = <%= game.totalTime || 0 %>;
 
     </script>
 

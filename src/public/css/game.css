@@ -172,16 +172,60 @@ body {
    /* Game message */
 
 
+/* Game board section */
+
+.game-board-section {
+    position: relative;
+}
+
+
+/* Game message */
+
 #gameMessage {
+    position: absolute;
+
+    top: 100%;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    width: max-content;
+
     margin-top: 20px;
 
     font-size: 18px;
-
     font-weight: bold;
+
+    text-align: center;
 }
 
+
 .success-message {
-    margin-top: 20px;
+    color: #198754;
+
     font-size: 20px;
     font-weight: bold;
+
+    text-align: center;
+}
+
+.new-game-button {
+    display: none;
+
+    margin-top: 15px;
+
+    padding: 10px 18px;
+
+    background: #222;
+    color: white;
+
+    text-decoration: none;
+
+    border-radius: 5px;
+
+    font-size: 16px;
+}
+
+.new-game-button:hover {
+    background: #333;
 }

@@ -12,11 +12,6 @@ const shikakuSchema = new mongoose.Schema(
             required: true
         },
 
-        numbers: {
-            type: Array,
-            default: []
-        },
-
         rectangles: {
             type: Array,
             default: []

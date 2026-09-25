@@ -44,7 +44,7 @@ gameForm.addEventListener("submit", async (event) => {
 
         console.log("Rectangles generated:", rectangleResult);
 
-        window.location.href = `view/game/${boardId}`;
+        window.location.href = `/game/${boardId}`;
 
     } catch (error) {
         console.log(error);

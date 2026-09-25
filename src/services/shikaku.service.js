@@ -9,6 +9,7 @@ export const createGameService = async ({ rows, columns }) => {
   return game;
 };
 
+
 export const generateRectanglesService = async (boardId) => {
   const game = await Shikaku.findById(boardId);
 
@@ -21,36 +22,19 @@ export const generateRectanglesService = async (boardId) => {
   const board = [];
 
   for (let row = 0; row < game.rows; row++) {
-    board[row] = [];
-
-    for (let column = 0; column < game.columns; column++) {
-      board[row][column] = false;
-    }
+    board.push(new Array(game.columns).fill(false));
   }
 
-  const rectangles = [];
-
-  const canPlaceRectangle = (row, column, width, height) => {
-    if (row + height > game.rows) {
-      return false;
-    }
-
-    if (column + width > game.columns) {
-      return false;
-    }
-
+  const isFree = (row, column, width, height) => {
     for (let r = row; r < row + height; r++) {
       for (let c = column; c < column + width; c++) {
-        if (board[r][c]) {
-          return false;
-        }
+        if (board[r][c]) return false;
       }
     }
-
     return true;
   };
 
-  const placeRectangle = (row, column, width, height) => {
+  const fill = (row, column, width, height) => {
     for (let r = row; r < row + height; r++) {
       for (let c = column; c < column + width; c++) {
         board[r][c] = true;
@@ -58,101 +42,77 @@ export const generateRectanglesService = async (boardId) => {
     }
   };
 
-  const removeRectangle = (row, column, width, height) => {
-    for (let r = row; r < row + height; r++) {
-      for (let c = column; c < column + width; c++) {
-        board[r][c] = false;
-      }
+  let rectangles = [];
+
+  // all sizes bigger than 1x1
+  const sizes = [];
+  for (let h = 1; h <= 3; h++) {
+    for (let w = 1; w <= 3; w++) {
+      if (w * h > 1) sizes.push({ w, h });
     }
-  };
+  }
 
-  const generate = () => {
-    let emptyRow = -1;
-    let emptyColumn = -1;
 
-    // Find first empty cell
-    for (let row = 0; row < game.rows; row++) {
-      for (let column = 0; column < game.columns; column++) {
-        if (!board[row][column]) {
-          emptyRow = row;
-          emptyColumn = column;
+  for (let row = 0; row < game.rows; row++) {
+    for (let column = 0; column < game.columns; column++) {
+      if (board[row][column]) continue;
+
+      const shuffled = [...sizes].sort(() => Math.random() - 0.5);
+
+      let width = 1;
+      let height = 1;
+
+      for (const size of shuffled) {
+        if (
+          size.w <= game.columns - column &&
+          size.h <= game.rows - row &&
+          isFree(row, column, size.w, size.h)
+        ) {
+          width = size.w;
+          height = size.h;
           break;
         }
       }
 
-      if (emptyRow !== -1) {
-        break;
-      }
+      fill(row, column, width, height);
+
+      rectangles.push({ row, column, width, height, locked: false });
     }
-
-    // Board is completely filled
-    if (emptyRow === -1) {
-      return true;
-    }
-
-    const possibleRectangles = [];
-
-    // Generate possible rectangles
-    for (let height = 1; height <= 3; height++) {
-      for (let width = 1; width <= 3; width++) {
-        const area = width * height;
-
-        if (area < 2 || area > 6) {
-          continue;
-        }
-
-        if (canPlaceRectangle(emptyRow, emptyColumn, width, height)) {
-          possibleRectangles.push({
-            width,
-            height,
-          });
-        }
-      }
-    }
-
-    // Randomize rectangles
-    possibleRectangles.sort(() => Math.random() - 0.5);
-
-    for (const rectangle of possibleRectangles) {
-      const { width, height } = rectangle;
-
-      placeRectangle(emptyRow, emptyColumn, width, height);
-
-      const clueRow = emptyRow + Math.floor(Math.random() * height);
-
-      const clueColumn = emptyColumn + Math.floor(Math.random() * width);
-
-      rectangles.push({
-        id: rectangles.length + 1,
-        row: emptyRow,
-        column: emptyColumn,
-        width,
-        height,
-        clueRow,
-        clueColumn,
-        locked: false,
-      });
-
-      if (generate()) {
-        return true;
-      }
-
-      // Backtrack
-      rectangles.pop();
-
-      removeRectangle(emptyRow, emptyColumn, width, height);
-    }
-
-    return false;
-  };
-
-  const generated = generate();
-
-  if (!generated) {
-    const error = new Error("Unable to generate puzzle");
-    error.statusCode = 500;
-    throw error;
   }
+
+  for (const rect of rectangles) {
+    if (rect.width * rect.height !== 1) continue;
+
+    const left = rectangles.find(
+      (r) => r !== rect && r.height === 1 && r.row === rect.row &&
+        r.column + r.width === rect.column
+    );
+
+    if (left) {
+      left.width += 1;
+      rect.width = 0;
+      continue;
+    }
+
+    const above = rectangles.find(
+      (r) => r !== rect && r.width === 1 && r.column === rect.column &&
+        r.row + r.height === rect.row
+    );
+
+    if (above) {
+      above.height += 1;
+      rect.width = 0;
+    }
+  }
+
+  rectangles = rectangles
+    .filter((r) => r.width > 0)
+    .map((r, index) => ({
+      id: index + 1,
+      ...r,
+      clueRow: r.row + Math.floor(Math.random() * r.height),
+      clueColumn: r.column + Math.floor(Math.random() * r.width),
+    }));
 
   game.rectangles = rectangles;
 
@@ -187,7 +147,7 @@ export const selectRectangleService = async (
 };
 export const lockRectangleService = async (
   boardId,
-  { startRow, startColumn, endRow, endColumn },
+  { startRow, startColumn, endRow, endColumn }
 ) => {
   const game = await Shikaku.findById(boardId);
 
@@ -197,60 +157,97 @@ export const lockRectangleService = async (
     throw error;
   }
 
-  const selectedWidth = Math.abs(endColumn - startColumn) + 1;
+  const minRow = Math.min(startRow, endRow);
+  const minColumn = Math.min(startColumn, endColumn);
 
+  const selectedWidth = Math.abs(endColumn - startColumn) + 1;
   const selectedHeight = Math.abs(endRow - startRow) + 1;
 
-  const rectangle = game.rectangles.find((item) => {
+  const rectangleIndex = game.rectangles.findIndex((item) => {
     return (
-      item.row === Math.min(startRow, endRow) &&
-      item.column === Math.min(startColumn, endColumn) &&
+      item.row === minRow &&
+      item.column === minColumn &&
       item.width === selectedWidth &&
       item.height === selectedHeight
     );
   });
 
-  if (!rectangle) {
-    const error = new Error("Invalid rectangle selection");
-    error.statusCode = 400;
-    throw error;
+  // no matching rectangle at this position just an invalid drag
+  if (rectangleIndex === -1) {
+    return {
+      valid: false,
+      locked: false
+    };
+  }
+
+  const rectangle = game.rectangles[rectangleIndex];
+
+  if (rectangle.locked) {
+    return {
+      id: rectangle.id,
+      row: rectangle.row,
+      column: rectangle.column,
+      width: rectangle.width,
+      height: rectangle.height,
+      clueRow: rectangle.clueRow,
+      clueColumn: rectangle.clueColumn,
+      locked: true,
+      valid: true
+    };
   }
 
   rectangle.locked = true;
 
+ 
+  game.markModified("rectangles");
+
   await game.save();
 
-  return rectangle;
+  return {
+    id: rectangle.id,
+    row: rectangle.row,
+    column: rectangle.column,
+    width: rectangle.width,
+    height: rectangle.height,
+    clueRow: rectangle.clueRow,
+    clueColumn: rectangle.clueColumn,
+    locked: true,
+    valid: true
+  };
 };
 export const checkWinService = async (boardId) => {
-  const game = await Shikaku.findById(boardId);
 
-  if (!game) {
-    const error = new Error("Puzzle board not found");
-    error.statusCode = 404;
-    throw error;
-  }
+    const game = await Shikaku.findById(boardId);
 
-  const allLocked =
-    game.rectangles.length > 0 &&
-    game.rectangles.every((rectangle) => rectangle.locked === true);
+    if (!game) {
+        const error = new Error("Puzzle board not found");
+        error.statusCode = 404;
+        throw error;
+    }
 
-  if (allLocked) {
-    game.status = "completed";
-    game.endTime = new Date();
+    const allLocked =
+        game.rectangles.length > 0 &&
+        game.rectangles.every(
+            (rectangle) => rectangle.locked === true
+        );
 
-    const totalTime = Math.floor((game.endTime - game.startTime) / 1000);
+    if (allLocked && game.status !== "completed") {
 
-    game.totalTime = totalTime;
+        game.status = "completed";
+        game.endTime = new Date();
 
-    await game.save();
-  }
+        game.totalTime = Math.floor(
+            (game.endTime - game.startTime) / 1000
+        );
 
-  return {
-    won: allLocked,
-    status: game.status,
-    totalTime: game.totalTime,
-  };
+        await game.save();
+    }
+
+    return {
+        won: allLocked,
+        status: game.status,
+        totalTime: game.totalTime
+    };
 };
 
 export const resetGameService = async (boardId) => {
@@ -262,24 +259,20 @@ export const resetGameService = async (boardId) => {
     throw error;
   }
 
-  // Reset game state
   game.status = "playing";
   game.startTime = new Date();
   game.endTime = null;
   game.totalTime = 0;
-
-  // set to empty rectangles array
   game.rectangles = [];
 
   await game.save();
 
-  // Generate a completely new puzzle
   const rectangles = await generateRectanglesService(boardId);
 
   return rectangles;
 };
 
-export const getGameTimeService = async (boardId) => {
+export const getGameTimeService = async (boardId, stop = false) => {
   const game = await Shikaku.findById(boardId);
 
   if (!game) {
@@ -288,13 +281,20 @@ export const getGameTimeService = async (boardId) => {
     throw error;
   }
 
-  let totalTime = game.totalTime;
-
-  if (game.status === "playing") {
-    totalTime = Math.floor((Date.now() - game.startTime.getTime()) / 1000);
+  if (game.status !== "playing") {
+    return { totalTime: game.totalTime, status: game.status };
   }
 
-  return {
-    totalTime,
-  };
+  const elapsed = Math.floor((Date.now() - game.startTime.getTime()) / 1000);
+
+  if (!stop) {
+    return { totalTime: elapsed, status: game.status };
+  }
+
+  game.status = "paused";
+  game.endTime = new Date();
+  game.totalTime = elapsed;
+  await game.save();
+
+  return { totalTime: elapsed, status: game.status };
 };

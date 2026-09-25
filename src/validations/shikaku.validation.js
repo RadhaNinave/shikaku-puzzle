@@ -4,11 +4,13 @@ export const createShikakuSchema = Joi.object({
     rows: Joi.number()
         .integer()
         .min(1)
+        .max(15)
         .required(),
 
     columns: Joi.number()
         .integer()
         .min(1)
+        .max(15)
         .required()
 });
 

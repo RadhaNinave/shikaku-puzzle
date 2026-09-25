@@ -1,92 +1,4 @@
-/* * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
 
-body {
-    font-family: Arial, sans-serif;
-    background: #f4f4f4;
-}
-
-.game-container {
-    min-height: 100vh;
-    padding: 40px;
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.game-container h1 {
-    margin-bottom: 20px;
-}
-
-.game-info {
-    width: 300px;
-
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    margin-bottom: 30px;
-}
-
-.game-info button {
-    width: auto;
-    padding: 8px 16px;
-
-    border: none;
-    border-radius: 5px;
-
-    background: #222;
-    color: white;
-
-    cursor: pointer;
-}
-
-.game-board {
-    display: grid;
-
-    border: 2px solid #222;
-    background: white;
-
-    user-select: none;
-}
-
-.cell {
-    width: 60px;
-    height: 60px;
-
-    border: 1px solid #999;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    cursor: crosshair;
-
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.cell:hover {
-    background: #eeeeee;
-}
-
-.cell.selected {
-    background: #d9eaff;
-}
-
-.cell.locked {
-    background: #d9eaff;
-
-    cursor: default;
-}
-
-#gameMessage {
-    margin-top: 20px;
-} */
  * {
     box-sizing: border-box;
     margin: 0;
@@ -100,9 +12,9 @@ body {
 }
 
 
-/* ========================================
-   Game container
-======================================== */
+
+/* // Game container */
+
 
 .game-container {
     min-height: 100vh;
@@ -120,9 +32,8 @@ body {
 }
 
 
-/* ========================================
-   Game information
-======================================== */
+/* // Game information */
+
 
 .game-info {
     width: 300px;
@@ -155,24 +66,22 @@ body {
 }
 
 
-/* ========================================
-   Game board
-======================================== */
+/* Game board */
 
 .game-board {
     display: grid;
 
-    border: 2px solid #222;
+    width: max-content;
+    height: max-content;
 
+    border: 2px solid #222;
     background: white;
 
     user-select: none;
 }
 
 
-/* ========================================
-   Cell
-======================================== */
+/* Cell */
 
 .cell {
     width: 60px;
@@ -193,27 +102,21 @@ body {
 }
 
 
-/* ========================================
-   Normal cell hover
-======================================== */
+/* Normal cell hover */
 
 .cell:hover {
     background: #eeeeee;
 }
 
 
-/* ========================================
-   Selected rectangle
-======================================== */
+/* Selected rectangle  */
 
 .cell.selected {
     background: #d9eaff;
 }
 
 
-/* ========================================
-   Selected rectangle borders
-======================================== */
+/* Selected rectangle borders */
 
 .cell.selected-top {
     border-top: 3px solid #222;
@@ -235,9 +138,7 @@ body {
 }
 
 
-/* ========================================
-   Locked rectangle
-======================================== */
+/* Locked rectangle */
 
 .cell.locked {
     background: #d9eaff;
@@ -246,9 +147,7 @@ body {
 }
 
 
-/* ========================================
-   Locked rectangle borders
-======================================== */
+/*Locked rectangle borders*/
 
 .cell.locked-top {
     border-top: 3px solid #222;
@@ -270,14 +169,19 @@ body {
 }
 
 
-/* ========================================
-   Game message
-======================================== */
+   /* Game message */
+
 
 #gameMessage {
     margin-top: 20px;
 
     font-size: 18px;
 
+    font-weight: bold;
+}
+
+.success-message {
+    margin-top: 20px;
+    font-size: 20px;
     font-weight: bold;
 }

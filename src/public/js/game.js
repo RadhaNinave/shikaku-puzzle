@@ -1,558 +1,421 @@
+const socket = io();
+
+socket.on("connect", () => {
+  console.log("Socket connected:", socket.id);
+
+  socket.emit("joinGame", boardId);
+});
+
+socket.on("gameWon", (data) => {
+  console.log("game won:", data);
+
+  const message = document.getElementById("gameMessage");
+
+  if (message) {
+    message.textContent = data.message;
+  }
+});
+
 const cells = document.querySelectorAll(".cell");
 const resetButton = document.getElementById("resetButton");
+const timerElement = document.getElementById("timer");
 
 let isDragging = false;
 let startCell = null;
 
-// ========================================
-// Show puzzle clues
-// ========================================
+let timerInterval = null;
+let elapsedSeconds = 0;
+let gameCompleted = false;
 
+// put the clue numbers on the board
 rectangles.forEach((rectangle) => {
+  const cell = document.querySelector(
+    `[data-row="${rectangle.clueRow}"][data-column="${rectangle.clueColumn}"]`,
+  );
 
-    const cell = document.querySelector(
-        `[data-row="${rectangle.clueRow}"][data-column="${rectangle.clueColumn}"]`
-    );
+  if (!cell) {
+    return;
+  }
 
-    if (!cell) {
-        return;
-    }
+  const area = rectangle.width * rectangle.height;
 
-    const area = rectangle.width * rectangle.height;
-
-    cell.textContent = area;
+  cell.textContent = area;
 });
-
-
-// ========================================
-// Mouse down
-// ========================================
 
 cells.forEach((cell) => {
+  cell.addEventListener("mousedown", (event) => {
+    event.preventDefault();
 
-    cell.addEventListener("mousedown", (event) => {
-
-        event.preventDefault();
-
-        // Don't allow starting selection from locked cell
-        if (cell.classList.contains("locked")) {
-            return;
-        }
-
-        isDragging = true;
-
-        startCell = {
-            row: Number(cell.dataset.row),
-            column: Number(cell.dataset.column)
-        };
-
-        clearSelection();
-
-        cell.classList.add("selected");
-    });
-
-
-    // ========================================
-    // Mouse enter
-    // ========================================
-
-    cell.addEventListener("mouseenter", () => {
-
-        if (!isDragging || !startCell) {
-            return;
-        }
-
-        const currentCell = {
-            row: Number(cell.dataset.row),
-            column: Number(cell.dataset.column)
-        };
-
-        showRectangle(startCell, currentCell);
-    });
-
-});
-
-
-// ========================================
-// Mouse up
-// ========================================
-
-document.addEventListener("mouseup", async () => {
-
-    if (!isDragging || !startCell) {
-        return;
+    if (gameCompleted) {
+      return;
     }
 
-    isDragging = false;
-
-    const rectangle = getSelectedRectangle();
-
-    startCell = null;
-
-    if (!rectangle) {
-        clearSelection();
-        return;
+    // Don't allow starting selection from locked cell
+    if (cell.classList.contains("locked")) {
+      return;
     }
 
-    await selectRectangle(rectangle);
-});
+    isDragging = true;
 
-
-// ========================================
-// Show selected rectangle
-// ========================================
-
-function showRectangle(start, end) {
+    startCell = {
+      row: Number(cell.dataset.row),
+      column: Number(cell.dataset.column),
+    };
 
     clearSelection();
 
-    const startRow = Math.min(
-        start.row,
-        end.row
-    );
+    cell.classList.add("selected");
+  });
 
-    const endRow = Math.max(
-        start.row,
-        end.row
-    );
-
-    const startColumn = Math.min(
-        start.column,
-        end.column
-    );
-
-    const endColumn = Math.max(
-        start.column,
-        end.column
-    );
-
-
-    const selectedCells = [];
-
-
-    // Find cells inside selected rectangle
-
-    cells.forEach((cell) => {
-
-        const row = Number(cell.dataset.row);
-        const column = Number(cell.dataset.column);
-
-        if (
-            row >= startRow &&
-            row <= endRow &&
-            column >= startColumn &&
-            column <= endColumn
-        ) {
-            selectedCells.push(cell);
-        }
-    });
-
-
-    // Don't allow selection over locked rectangle
-
-    const containsLockedCell = selectedCells.some((cell) => {
-        return cell.classList.contains("locked");
-    });
-
-
-    if (containsLockedCell) {
-        return;
+  // dragging over cells while mouse is held down
+  cell.addEventListener("mouseenter", () => {
+    if (!isDragging || !startCell) {
+      return;
     }
 
+    const currentCell = {
+      row: Number(cell.dataset.row),
+      column: Number(cell.dataset.column),
+    };
 
-    // Highlight selected cells
+    showRectangle(startCell, currentCell);
+  });
+});
 
-    selectedCells.forEach((cell) => {
+document.addEventListener("mouseup", async () => {
+  if (!isDragging || !startCell) {
+    return;
+  }
 
-        const row = Number(cell.dataset.row);
-        const column = Number(cell.dataset.column);
+  isDragging = false;
 
-        cell.classList.add("selected");
+  const rectangle = getSelectedRectangle();
 
+  startCell = null;
 
-        // Top border
+  if (!rectangle) {
+    clearSelection();
+    return;
+  }
 
-        if (row === startRow) {
-            cell.classList.add("selected-top");
-        }
+  await selectRectangle(rectangle);
+});
 
+function showRectangle(start, end) {
+  clearSelection();
 
-        // Bottom border
+  const startRow = Math.min(start.row, end.row);
 
-        if (row === endRow) {
-            cell.classList.add("selected-bottom");
-        }
+  const endRow = Math.max(start.row, end.row);
 
+  const startColumn = Math.min(start.column, end.column);
 
-        // Left border
+  const endColumn = Math.max(start.column, end.column);
 
-        if (column === startColumn) {
-            cell.classList.add("selected-left");
-        }
+  const selectedCells = [];
 
+  cells.forEach((cell) => {
+    const row = Number(cell.dataset.row);
+    const column = Number(cell.dataset.column);
 
-        // Right border
+    if (
+      row >= startRow &&
+      row <= endRow &&
+      column >= startColumn &&
+      column <= endColumn
+    ) {
+      selectedCells.push(cell);
+    }
+  });
 
-        if (column === endColumn) {
-            cell.classList.add("selected-right");
-        }
-    });
+  const containsLockedCell = selectedCells.some((cell) =>
+    cell.classList.contains("locked"),
+  );
+
+  if (containsLockedCell) {
+    return;
+  }
+
+  selectedCells.forEach((cell) => {
+    const row = Number(cell.dataset.row);
+    const column = Number(cell.dataset.column);
+
+    cell.classList.add("selected");
+
+    if (row === startRow) cell.classList.add("selected-top");
+    if (row === endRow) cell.classList.add("selected-bottom");
+    if (column === startColumn) cell.classList.add("selected-left");
+    if (column === endColumn) cell.classList.add("selected-right");
+  });
 }
-
-
-// ========================================
-// Get selected rectangle
-// ========================================
 
 function getSelectedRectangle() {
+  const selectedCells = document.querySelectorAll(".cell.selected");
 
-    const selectedCells = document.querySelectorAll(
-        ".cell.selected"
-    );
+  if (selectedCells.length === 0) {
+    return null;
+  }
 
+  const rows = [];
+  const columns = [];
 
-    if (selectedCells.length === 0) {
-        return null;
-    }
+  selectedCells.forEach((cell) => {
+    rows.push(Number(cell.dataset.row));
 
+    columns.push(Number(cell.dataset.column));
+  });
 
-    const rows = [];
-    const columns = [];
+  return {
+    startRow: Math.min(...rows),
 
+    startColumn: Math.min(...columns),
 
-    selectedCells.forEach((cell) => {
+    endRow: Math.max(...rows),
 
-        rows.push(
-            Number(cell.dataset.row)
-        );
-
-        columns.push(
-            Number(cell.dataset.column)
-        );
-    });
-
-
-    return {
-
-        startRow: Math.min(...rows),
-
-        startColumn: Math.min(...columns),
-
-        endRow: Math.max(...rows),
-
-        endColumn: Math.max(...columns)
-
-    };
+    endColumn: Math.max(...columns),
+  };
 }
-
-
-// ========================================
-// Select rectangle API
-// ========================================
 
 async function selectRectangle(rectangle) {
+  try {
+    const response = await fetch(`/shikaku/select/${boardId}`, {
+      method: "POST",
 
-    try {
+      headers: {
+        "Content-Type": "application/json",
+      },
 
-        const response = await fetch(
-            `/shikaku/select/${boardId}`,
-            {
-                method: "POST",
+      body: JSON.stringify(rectangle),
+    });
 
-                headers: {
-                    "Content-Type": "application/json"
-                },
+    const result = await response.json();
 
-                body: JSON.stringify(rectangle)
-            }
-        );
+    if (!response.ok) {
+      console.log("Select rectangle error:", result.message);
 
+      clearSelection();
 
-        const result = await response.json();
-
-
-        if (!response.ok) {
-
-            console.log(
-                "Select rectangle error:",
-                result.message
-            );
-
-            clearSelection();
-
-            return;
-        }
-
-
-        console.log(
-            "Rectangle selected:",
-            result.data
-        );
-
-
-        // Lock the selected rectangle
-
-        await lockRectangle(rectangle);
-
-    } catch (error) {
-
-        console.log(
-            "Select rectangle error:",
-            error
-        );
-
-        clearSelection();
+      return;
     }
+
+    console.log("Rectangle selected:", result.data);
+
+    // Lock the selected rectangle
+
+    await lockRectangle(rectangle);
+  } catch (error) {
+    console.log("Select rectangle error:", error);
+
+    clearSelection();
+  }
 }
-
-
-// ========================================
-// Lock rectangle API
-// ========================================
 
 async function lockRectangle(rectangle) {
+  try {
+    const response = await fetch(`/shikaku/lock/${boardId}`, {
+      method: "POST",
 
-    try {
+      headers: {
+        "Content-Type": "application/json",
+      },
 
-        const response = await fetch(
-            `/shikaku/lock/${boardId}`,
-            {
-                method: "POST",
+      body: JSON.stringify(rectangle),
+    });
 
-                headers: {
-                    "Content-Type": "application/json"
-                },
+    const result = await response.json();
 
-                body: JSON.stringify(rectangle)
-            }
-        );
-
-
-        const result = await response.json();
-
-
-        if (!response.ok) {
-
-            console.log(
-                "Lock rectangle error:",
-                result.message
-            );
-
-            clearSelection();
-
-            return;
-        }
-
-
-        console.log(
-            "Rectangle locked:",
-            result.data
-        );
-
-
-        // Convert selected rectangle into locked rectangle
-
-        lockSelectedCells();
-
-
-        // Check if game is completed
-
-        await checkWin();
-
-    } catch (error) {
-
-        console.log(
-            "Lock rectangle error:",
-            error
-        );
-
-        clearSelection();
+    if (!response.ok) {
+      console.log(result.message);
+      clearSelection();
+      return;
     }
+
+    if (!result.data.valid) {
+     
+      clearSelection();
+      return;
+    }
+
+    // Correct rectangle
+    lockSelectedCells();
+
+    await checkWin();
+  } catch (error) {
+    console.log("Lock rectangle error:", error);
+
+    clearSelection();
+  }
 }
-
-
-// ========================================
-// Convert selected cells to locked cells
-// ========================================
 
 function lockSelectedCells() {
+  const selectedCells = document.querySelectorAll(".cell.selected");
 
-    const selectedCells = document.querySelectorAll(
-        ".cell.selected"
+  selectedCells.forEach((cell) => {
+    const isTop = cell.classList.contains("selected-top");
+    const isBottom = cell.classList.contains("selected-bottom");
+    const isLeft = cell.classList.contains("selected-left");
+    const isRight = cell.classList.contains("selected-right");
+
+    cell.classList.remove(
+      "selected",
+      "selected-top",
+      "selected-bottom",
+      "selected-left",
+      "selected-right",
     );
 
+    cell.classList.add("locked");
 
-    selectedCells.forEach((cell) => {
-
-        // Save border information before removing classes
-
-        const isTop = cell.classList.contains("selected-top");
-        const isBottom = cell.classList.contains("selected-bottom");
-        const isLeft = cell.classList.contains("selected-left");
-        const isRight = cell.classList.contains("selected-right");
-
-
-        // Remove selection classes
-
-        cell.classList.remove("selected");
-
-        cell.classList.remove("selected-top");
-        cell.classList.remove("selected-bottom");
-        cell.classList.remove("selected-left");
-        cell.classList.remove("selected-right");
-
-
-        // Add locked class
-
-        cell.classList.add("locked");
-
-
-        // Add locked borders
-
-        if (isTop) {
-            cell.classList.add("locked-top");
-        }
-
-        if (isBottom) {
-            cell.classList.add("locked-bottom");
-        }
-
-        if (isLeft) {
-            cell.classList.add("locked-left");
-        }
-
-        if (isRight) {
-            cell.classList.add("locked-right");
-        }
-    });
+    if (isTop) cell.classList.add("locked-top");
+    if (isBottom) cell.classList.add("locked-bottom");
+    if (isLeft) cell.classList.add("locked-left");
+    if (isRight) cell.classList.add("locked-right");
+  });
 }
-
-
-// ========================================
-// Check win API
-// ========================================
 
 async function checkWin() {
+  try {
+    const response = await fetch(`/shikaku/check-win/${boardId}`);
 
-    try {
+    const result = await response.json();
 
-        const response = await fetch(
-            `/shikaku/check-win/${boardId}`
-        );
+    console.log("Win response:", result);
 
-
-        const result = await response.json();
-
-
-        console.log(
-            "Win response:",
-            result
-        );
-
-
-        if (!response.ok) {
-            return;
-        }
-
-
-        if (result.data.won) {
-
-            const message = document.getElementById(
-                "gameMessage"
-            );
-
-
-            if (message) {
-
-                message.textContent =
-                    `Congratulations! You completed the puzzle in ${result.data.totalTime} seconds.`;
-
-            } else {
-
-                alert(
-                    `Congratulations! You completed the puzzle in ${result.data.totalTime} seconds.`
-                );
-            }
-        }
-
-    } catch (error) {
-
-        console.log(
-            "Check win error:",
-            error
-        );
+    if (!response.ok) {
+      return;
     }
+
+    if (result.data.won) {
+      gameCompleted = true;
+
+      // Stop timer
+      stopTimer();
+
+      // Use final time from backend
+      elapsedSeconds = result.data.totalTime;
+
+      updateTimerDisplay();
+
+      const message = document.getElementById("gameMessage");
+
+      if (message) {
+        message.textContent = `Congratulations! You completed the puzzle in ${formatTime(result.data.totalTime)}.`;
+
+        message.classList.add("success-message");
+      }
+    }
+  } catch (error) {
+    console.log("Check win error:", error);
+  }
 }
-
-
-// ========================================
-// Clear current selection
-// ========================================
 
 function clearSelection() {
+  cells.forEach((cell) => {
+    cell.classList.remove("selected");
 
-    cells.forEach((cell) => {
-
-        cell.classList.remove("selected");
-
-        cell.classList.remove("selected-top");
-        cell.classList.remove("selected-bottom");
-        cell.classList.remove("selected-left");
-        cell.classList.remove("selected-right");
-    });
+    cell.classList.remove("selected-top");
+    cell.classList.remove("selected-bottom");
+    cell.classList.remove("selected-left");
+    cell.classList.remove("selected-right");
+  });
 }
 
-// ========================================
-// Reset game
-// ========================================
-
 resetButton.addEventListener("click", async () => {
+  try {
+    resetButton.disabled = true;
 
-    try {
+    const response = await fetch(`/shikaku/reset/${boardId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-        resetButton.disabled = true;
+    const result = await response.json();
 
-        const response = await fetch(
-            `/shikaku/reset/${boardId}`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            }
-        );
+    if (!response.ok) {
+      console.log("Reset error:", result.message);
 
-        const result = await response.json();
+      resetButton.disabled = false;
 
-        if (!response.ok) {
-
-            console.log(
-                "Reset error:",
-                result.message
-            );
-
-            resetButton.disabled = false;
-
-            return;
-        }
-
-        console.log(
-            "Game reset:",
-            result.data
-        );
-
-        // Reload the page.
-        // The page will load the newly generated puzzle
-        // and newly generated clues from MongoDB.
-        window.location.reload();
-
-    } catch (error) {
-
-        console.log(
-            "Reset game error:",
-            error
-        );
-
-        resetButton.disabled = false;
+      return;
     }
+
+    console.log("Game reset:", result.data);
+
+    // Reload the page.
+
+    window.location.reload();
+  } catch (error) {
+    console.log("Reset game error:", error);
+
+    resetButton.disabled = false;
+  }
 });
+
+function formatTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+
+  const remainingSeconds = seconds % 60;
+
+  return `${String(minutes).padStart(2, "0")}:${String(
+    remainingSeconds,
+  ).padStart(2, "0")}`;
+}
+
+function updateTimerDisplay() {
+  if (!timerElement) {
+    return;
+  }
+
+  timerElement.textContent = formatTime(elapsedSeconds);
+}
+
+function startTimer() {
+  // Prevent multiple timers
+  if (timerInterval) {
+    return;
+  }
+
+  timerInterval = setInterval(() => {
+    elapsedSeconds++;
+
+    updateTimerDisplay();
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+
+    timerInterval = null;
+  }
+}
+async function initializeTimer() {
+  try {
+    const response = await fetch(`/shikaku/time/${boardId}`);
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.log("Get time error:", result.message);
+      return;
+    }
+
+    elapsedSeconds = result.data.totalTime;
+
+    updateTimerDisplay();
+
+    if (result.data.status === "completed") {
+      return;
+    }
+
+    startTimer();
+  } catch (error) {
+    console.log("Timer initialization error:", error);
+
+    startTimer();
+  }
+}
+
+initializeTimer();
